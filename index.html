@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MeetMute — Speaker Control for Google Meet</title>
+<meta name="description" content="Join two Google Meet meetings at once. Mute the speaker on any tab independently. 30-day free trial, then $20 lifetime."/>
+<meta property="og:title" content="MeetMute — Speaker Control for Google Meet"/>
+<meta property="og:description" content="Stop hearing all your meetings at once. Mute speaker output per tab."/>
+<meta property="og:type" content="website"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+/* ── Tokens ── */
+:root {
+  --bg:        #080a0d;
+  --bg2:       #0d1017;
+  --bg3:       #131720;
+  --card:      #111419;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #e8eaf0;
+  --muted:     #6b7280;
+  --accent:    #4ade80;   /* green */
+  --accent2:   #22c55e;
+  --red:       #f87171;
+  --gold:      #fbbf24;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── Grid lines background ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Glow orbs ── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb-1 { width: 600px; height: 600px; background: rgba(74,222,128,0.06); top: -200px; left: -200px; }
+.orb-2 { width: 500px; height: 500px; background: rgba(99,102,241,0.05); bottom: 100px; right: -100px; }
+
+/* ── Layout ── */
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+/* ── Nav ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,10,13,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.nav-inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.nav-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.nav-logo-text {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.nav-logo-text span { color: var(--accent); }
+.nav-links { display: flex; align-items: center; gap: 24px; }
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.15s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--accent);
+  color: #000;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: var(--font-head);
+  transition: opacity 0.15s, transform 0.15s;
+}
+.nav-cta:hover { opacity: 0.88; transform: translateY(-1px); }
+
+/* ── Hero ── */
+.hero {
+  padding: 160px 0 100px;
+  text-align: center;
+  position: relative;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 32px;
+}
+.hero-eyebrow::before {
+  content: '';
+  width: 6px; height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.hero-title {
+  font-family: var(--font-head);
+  font-size: clamp(44px, 7vw, 80px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: var(--text);
+  margin-bottom: 24px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-title .line-2 {
+  color: var(--accent);
+  display: block;
+}
+.hero-title .line-3 {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 0.7em;
+  letter-spacing: -1px;
+}
+
+.hero-desc {
+  font-size: 18px;
+  color: var(--muted);
+  max-width: 520px;
+  margin: 0 auto 48px;
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 60px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #000;
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: -0.3px;
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(74,222,128,0.2); }
+.btn-primary .arrow { font-size: 18px; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text);
+  padding: 14px 28px;
+  border-radius: 10px;
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border2);
+  transition: all 0.2s;
+}
+.btn-secondary:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
+
+.hero-note {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.5px;
+}
+
+/* ── Problem section ── */
+.problem {
+  padding: 80px 0;
+  border-top: 1px solid var(--border);
+}
+.problem-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.problem-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--red);
+  margin-bottom: 16px;
+}
+.problem-title {
+  font-family: var(--font-head);
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+.problem-desc {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.8;
+  font-weight: 300;
+}
+
+/* ── Meet UI mockup ── */
+.meet-mockup {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+.mockup-titlebar {
+  background: var(--bg3);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.mockup-dots { display: flex; gap: 5px; }
+.mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+.mockup-dot.r { background: #ff5f57; }
+.mockup-dot.y { background: #febc2e; }
+.mockup-dot.g { background: #28c840; }
+.mockup-url { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 3px 10px; font-size: 10px; font-family: var(--font-mono); color: var(--muted); margin-left: 8px; flex: 1; text-align: center; }
+
+.mockup-tabs {
+  display: flex;
+  background: var(--bg2);
+  padding: 8px 8px 0;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.mockup-tab {
+  padding: 6px 14px;
+  border-radius: 6px 6px 0 0;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  white-space: nowrap;
+}
+.mockup-tab.active { background: var(--bg3); color: var(--text); }
+.mockup-tab .sound-on { color: var(--accent); font-size: 10px; }
+.mockup-tab .sound-off { color: var(--red); font-size: 10px; }
+
+.mockup-meet {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  min-height: 140px;
+}
+.mockup-tile {
+  background: var(--bg3);
+  border-radius: 8px;
+  aspect-ratio: 16/10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+  position: relative;
+  overflow: hidden;
+}
+.mockup-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(74,222,128,0.04), transparent);
+}
+.mockup-tile-avatar { font-size: 20px; }
+.mockup-muted-overlay {
+  position: absolute;
+  top: 6px; right: 6px;
+  background: rgba(248,113,113,0.15);
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 9px;
+  color: var(--red);
+  font-family: var(--font-mono);
+}
+
+/* ── Features ── */
+.features {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.section-label {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  text-align: center;
+}
+.section-title {
+  font-family: var(--font-head);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  text-align: center;
+  margin-bottom: 60px;
+  line-height: 1.1;
+}
+.section-title em { font-style: normal; color: var(--accent); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.feat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.feat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(74,222,128,0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.feat-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+.feat-card:hover::before { opacity: 1; }
+
+.feat-icon {
+  font-size: 28px;
+  margin-bottom: 16px;
+  display: block;
+}
+.feat-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+.feat-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+  font-weight: 300;
+}
+.feat-tag {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.feat-tag.free { background: rgba(74,222,128,0.08); color: var(--accent); border: 1px solid rgba(74,222,128,0.15); }
+.feat-tag.premium { background: rgba(192,132,252,0.08); color: #c084fc; border: 1px solid rgba(192,132,252,0.15); }
+
+/* ── How it works ── */
+.how {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  position: relative;
+  margin-top: 60px;
+}
+.how-steps::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.3;
+}
+.how-step { text-align: center; padding: 0 20px; }
+.how-num {
+  width: 48px; height: 48px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent);
+  margin: 0 auto 20px;
+  position: relative;
+  z-index: 1;
+}
+.how-title {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+.how-desc { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 300; }
+
+/* ── Pricing ── */
+.pricing {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 720px;
+  margin: 60px auto 0;
+}
+.price-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+.price-card.featured {
+  border: 1px solid rgba(74,222,128,0.3);
+  background: linear-gradient(145deg, rgba(74,222,128,0.04), var(--card));
+}
+.price-card.featured::after {
+  content: 'RECOMMENDED';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #000;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 3px 12px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.price-name {
+  font-family: var(--font-head);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  letter-spacing: -0.3px;
+}
+.price-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.price-amount {
+  font-family: var(--font-head);
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.price-amount sup { font-size: 22px; vertical-align: top; margin-top: 6px; font-weight: 600; }
+.price-amount .price-free { color: var(--accent); font-size: 36px; }
+.price-period { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+.price-features { list-style: none; margin-bottom: 28px; }
+.price-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-weight: 300;
+}
+.price-features li:last-child { border-bottom: none; }
+.price-features li .ck { color: var(--accent); font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+.price-features li .xk { color: var(--muted); font-size: 13px; flex-shrink: 0; margin-top: 2px; opacity: 0.5; }
+.price-features li.active { color: var(--text); }
+.price-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  text-align: center;
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: -0.3px;
+}
+.price-btn.main { background: var(--accent); color: #000; }
+.price-btn.main:hover { opacity: 0.88; transform: translateY(-1px); }
+.price-btn.outline { border: 1px solid var(--border2); color: var(--text); }
+.price-btn.outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
+
+/* ── Voucher banner ── */
+.voucher-bar {
+  margin: 40px 0 0;
+  background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(251,191,36,0.02));
+  border: 1px solid rgba(251,191,36,0.18);
+  border-radius: 14px;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  max-width: 720px;
+  margin: 40px auto 0;
+  text-align: center;
+}
+.voucher-bar .v-emoji { font-size: 24px; }
+.voucher-bar .v-text { font-size: 15px; color: var(--text); }
+.voucher-bar .v-text strong { color: var(--gold); }
+.voucher-bar .v-code {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.25);
+  padding: 6px 16px;
+  border-radius: 8px;
+}
+.voucher-bar .v-note { font-size: 12px; color: var(--muted); width: 100%; font-family: var(--font-mono); letter-spacing: 0.5px; }
+
+/* ── FAQ ── */
+.faq {
+  padding: 100px 0;
+  border-top: 1px solid var(--border);
+  max-width: 680px;
+  margin: 0 auto;
+}
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-q {
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 22px 0;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  letter-spacing: -0.3px;
+  transition: color 0.15s;
+}
+.faq-q:hover { color: var(--accent); }
+.faq-q .chevron { font-size: 18px; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
+.faq-item.open .faq-q .chevron { transform: rotate(45deg); }
+.faq-a {
+  display: none;
+  padding: 0 0 20px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
+  font-weight: 300;
+}
+.faq-item.open .faq-a { display: block; }
+
+/* ── Footer ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 48px 0;
+}
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.footer-logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.footer-logo-text { font-family: var(--font-head); font-size: 16px; font-weight: 700; color: var(--text); }
+.footer-logo-text span { color: var(--accent); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+.footer-links a:hover { color: var(--text); }
+.footer-copy { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+/* ── Animations ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: fadeUp 0.6s ease forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up:nth-child(1) { animation-delay: 0.1s; }
+.fade-up:nth-child(2) { animation-delay: 0.2s; }
+.fade-up:nth-child(3) { animation-delay: 0.3s; }
+.fade-up:nth-child(4) { animation-delay: 0.4s; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .problem-inner { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  .how-steps { grid-template-columns: 1fr 1fr; gap: 32px; }
+  .how-steps::before { display: none; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+  .hero-title { font-size: 40px; letter-spacing: -1px; }
+  .hero-actions { flex-direction: column; }
+  .btn-primary, .btn-secondary { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">🔇</div>
+      <div class="nav-logo-text">Meet<span>Mute</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a href="https://chrome.google.com/webstore" class="nav-cta" target="_blank">Try free →</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow fade-up">Chrome Extension for Google Meet</div>
+
+    <h1 class="hero-title fade-up">
+      Join two meetings.
+      <span class="line-2">Hear only one.</span>
+      <span class="line-3">finally.</span>
+    </h1>
+
+    <p class="hero-desc fade-up">
+      Google Meet lets you mute your mic — but not your speaker.
+      MeetMute fixes that. Silence any meeting tab independently
+      and focus on what matters.
+    </p>
+
+    <div class="hero-actions fade-up">
+      <a href="https://chrome.google.com/webstore" class="btn-primary" target="_blank">
+        <span>Add to Chrome — Free</span>
+        <span class="arrow">→</span>
+      </a>
+      <a href="#pricing" class="btn-secondary">
+        View pricing
+      </a>
+    </div>
+
+    <div class="hero-note fade-up">30-day free trial · No credit card required · Lifetime access from $20</div>
+
+    <!-- Mockup -->
+    <div style="margin-top: 60px; max-width: 680px; margin-left: auto; margin-right: auto;" class="fade-up">
+      <div class="meet-mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dots">
+            <div class="mockup-dot r"></div>
+            <div class="mockup-dot y"></div>
+            <div class="mockup-dot g"></div>
+          </div>
+          <div class="mockup-url">meet.google.com</div>
+        </div>
+        <div class="mockup-tabs">
+          <div class="mockup-tab active">
+            <span class="sound-on">🔊</span>
+            <span style="font-size:10px; color:#a0a0b0;">Team Standup</span>
+          </div>
+          <div class="mockup-tab">
+            <span class="sound-off">🔇</span>
+            <span style="font-size:10px; color:#6b7280;">Client Call</span>
+          </div>
+          <div class="mockup-tab">
+            <span class="sound-off">🔇</span>
+            <span style="font-size:10px; color:#6b7280;">All Hands</span>
+          </div>
+        </div>
+        <div class="mockup-meet">
+          <div class="mockup-tile">
+            <div class="mockup-tile-avatar">👤</div>
+          </div>
+          <div class="mockup-tile" style="background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.15);">
+            <div class="mockup-tile-avatar">👤</div>
+          </div>
+          <div class="mockup-tile">
+            <div class="mockup-tile-avatar">👤</div>
+            <div class="mockup-muted-overlay">MUTED</div>
+          </div>
+        </div>
+        <!-- Floating badge -->
+        <div style="position: absolute; bottom: 16px; right: 16px; background: rgba(13,16,23,0.92); border: 1px solid rgba(74,222,128,0.3); border-radius: 20px; padding: 6px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--accent); display: flex; align-items: center; gap: 6px; backdrop-filter: blur(8px);">
+          <span style="width:7px;height:7px;background:var(--accent);border-radius:50%;display:inline-block;"></span>
+          Speaker ON
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Problem -->
+<section class="problem">
+  <div class="wrap">
+    <div class="problem-inner">
+      <div>
+        <div class="problem-label">The problem</div>
+        <h2 class="problem-title">You're in two meetings. Both are talking at you.</h2>
+        <p class="problem-desc">
+          Modern work means juggling multiple calls — a client meeting, a team standup, an all-hands —
+          all running simultaneously in separate tabs.<br><br>
+          Google Meet gives you a mic mute button. But there's <strong style="color:var(--text);">no speaker mute</strong>.
+          You either hear everything or you leave.<br><br>
+          MeetMute adds the missing control: silence any meeting's audio output without leaving,
+          without disrupting, and without touching your system volume.
+        </p>
+      </div>
+      <div>
+        <!-- Visual: before/after -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: rgba(248,113,113,0.06); border: 1px solid rgba(248,113,113,0.18); border-radius: 12px; padding: 20px;">
+            <div style="font-size:11px; font-family: var(--font-mono); color: var(--red); letter-spacing:1px; margin-bottom:12px;">BEFORE MEETMUTE</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted);">
+                <span style="color:var(--red)">✗</span> All meetings playing at once
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted);">
+                <span style="color:var(--red)">✗</span> Tab mute affects the whole site
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted);">
+                <span style="color:var(--red)">✗</span> Must leave to focus
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--muted);">
+                <span style="color:var(--red)">✗</span> System volume kills all audio
+              </div>
+            </div>
+          </div>
+          <div style="background: rgba(74,222,128,0.05); border: 1px solid rgba(74,222,128,0.18); border-radius: 12px; padding: 20px;">
+            <div style="font-size:11px; font-family: var(--font-mono); color: var(--accent); letter-spacing:1px; margin-bottom:12px;">WITH MEETMUTE</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text);">
+                <span style="color:var(--accent)">✓</span> Mute speaker per tab independently
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text);">
+                <span style="color:var(--accent)">✓</span> Focus Mode: one click, one meeting
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text);">
+                <span style="color:var(--accent)">✓</span> Stay joined in all meetings
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text);">
+                <span style="color:var(--accent)">✓</span> All meetings in one popup
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="wrap">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Everything you need to<br><em>manage multiple meetings</em></h2>
+    <div class="features-grid">
+      <div class="feat-card">
+        <span class="feat-icon">🔇</span>
+        <div class="feat-title">Per-tab speaker control</div>
+        <div class="feat-desc">Mute or unmute the audio output of any Google Meet tab independently. Your mic stays active — only the speaker output is silenced.</div>
+        <span class="feat-tag free">Free trial</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">⊙</span>
+        <div class="feat-title">Focus Mode</div>
+        <div class="feat-desc">One click silences every meeting except the one you choose. Switch focus instantly without touching any other tab.</div>
+        <span class="feat-tag premium">Premium</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">📋</span>
+        <div class="feat-title">Meeting dashboard</div>
+        <div class="feat-desc">All your active Google Meet tabs appear in one popup. See live mute status, switch tabs, and control audio without navigating between windows.</div>
+        <span class="feat-tag free">Free trial</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🏷</span>
+        <div class="feat-title">Custom labels</div>
+        <div class="feat-desc">Name each meeting — "Client Call", "Team Standup", "Interview". No more guessing which tab is which from the URL.</div>
+        <span class="feat-tag premium">Premium</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🟢</span>
+        <div class="feat-title">Floating in-page badge</div>
+        <div class="feat-desc">A subtle badge on each Meet page shows the current speaker mute state at a glance. Tap it to toggle without opening the popup.</div>
+        <span class="feat-tag free">Free trial</span>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🔒</span>
+        <div class="feat-title">Privacy first</div>
+        <div class="feat-desc">No audio is recorded, intercepted, or transmitted. MeetMute only sets the browser's native .muted property on audio elements. Zero data collection.</div>
+        <span class="feat-tag free">Always free</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how" id="how">
+  <div class="wrap">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Up and running in <em>60 seconds</em></h2>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num">01</div>
+        <div class="how-title">Install from Chrome Store</div>
+        <div class="how-desc">One click. No sign-up required. 30-day free trial starts automatically.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">02</div>
+        <div class="how-title">Open your Meet tabs</div>
+        <div class="how-desc">Join your meetings as usual. MeetMute detects them automatically — no extra steps.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">03</div>
+        <div class="how-title">Click the toolbar icon</div>
+        <div class="how-desc">See all active meetings in one popup. Each has an independent speaker mute button.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num">04</div>
+        <div class="how-title">Focus on what matters</div>
+        <div class="how-desc">Mute the meetings you're not actively in. Switch focus with one click anytime.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="section-label">Pricing</div>
+    <h2 class="section-title">Simple, honest pricing.<br><em>No subscription.</em></h2>
+
+    <div class="pricing-grid">
+      <!-- Free trial -->
+      <div class="price-card">
+        <div class="price-name">Free Trial</div>
+        <div class="price-sub">Full access for 30 days</div>
+        <div class="price-amount"><span class="price-free">Free</span></div>
+        <div class="price-period">No credit card required</div>
+        <ul class="price-features">
+          <li class="active"><span class="ck">✓</span> Per-tab speaker mute control</li>
+          <li class="active"><span class="ck">✓</span> Meeting dashboard popup</li>
+          <li class="active"><span class="ck">✓</span> Floating in-page badge</li>
+          <li class="active"><span class="ck">✓</span> Mute All / Unmute All</li>
+          <li><span class="xk">—</span> Focus Mode</li>
+          <li><span class="xk">—</span> Custom meeting labels</li>
+        </ul>
+        <a href="https://chrome.google.com/webstore" class="price-btn outline" target="_blank">Add to Chrome — Free</a>
+      </div>
+      <!-- Lifetime -->
+      <div class="price-card featured">
+        <div class="price-name">Lifetime Premium</div>
+        <div class="price-sub">Pay once, use forever</div>
+        <div class="price-amount"><sup>$</sup>20</div>
+        <div class="price-period">One-time · No subscription · Lifetime updates</div>
+        <ul class="price-features">
+          <li class="active"><span class="ck">✓</span> Everything in Free Trial</li>
+          <li class="active"><span class="ck">✓</span> Focus Mode — silence all but one</li>
+          <li class="active"><span class="ck">✓</span> Custom meeting labels</li>
+          <li class="active"><span class="ck">✓</span> Unlimited simultaneous meetings</li>
+          <li class="active"><span class="ck">✓</span> All future updates included</li>
+          <li class="active"><span class="ck">✓</span> Priority email support</li>
+        </ul>
+        <a href="https://meetmute.lemonsqueezy.com" class="price-btn main" target="_blank">Get Lifetime Access — $20</a>
+      </div>
+    </div>
+
+    <!-- Voucher banner -->
+    <div class="voucher-bar">
+      <span class="v-emoji">🎉</span>
+      <div class="v-text"><strong>New Year offer:</strong> 10% off lifetime access</div>
+      <div class="v-code">NEWYEAR10</div>
+      <div class="v-note">Enter code at checkout · Valid until 31 January 2026 · Final price $18.00</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="padding: 100px 0; border-top: 1px solid var(--border);" id="faq">
+  <div class="wrap">
+    <div class="section-label" style="text-align:center">FAQ</div>
+    <h2 class="section-title">Common questions</h2>
+    <div class="faq">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Does MeetMute record or transmit my audio?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">No. MeetMute only sets the browser's native <code style="background:rgba(255,255,255,0.06);border-radius:4px;padding:1px 5px;font-family:var(--font-mono);font-size:12px;">.muted</code> property on the audio and video elements in the page. It never intercepts, records, or transmits any audio data. Zero data collection of any kind.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Will the other meeting participants know I muted?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">No. MeetMute mutes your speaker output only — it's like turning down the volume on one tab without touching anything else. Your microphone stays active in all meetings, and participants in other calls won't see any change.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How many meetings can I have open at once?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">During the 30-day free trial, you get full access to all features with no meeting limit. After the trial, a $20 lifetime license unlocks unlimited simultaneous meetings forever.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Does it work on Zoom, Teams, or other platforms?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">MeetMute is currently built specifically for Google Meet (meet.google.com). Support for Microsoft Teams and other platforms is on the roadmap for a future release.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What happens after my 30-day trial ends?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">When the trial expires, the extension will prompt you to upgrade. You can purchase a lifetime license for $20 (one-time, no subscription). Enter your license key in the extension popup to instantly restore full access.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How do I apply a voucher code?
+          <span class="chevron">+</span>
+        </button>
+        <div class="faq-a">Open the MeetMute extension popup → click the ⚡ upgrade button → enter your voucher code in the "Have a voucher code?" field → click Apply. The discounted price will update instantly. You can also enter the code at checkout on the Lemon Squeezy payment page.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="wrap">
+    <div class="footer-inner">
+      <a href="#" class="footer-logo">
+        <div class="footer-logo-icon">🔇</div>
+        <div class="footer-logo-text">Meet<span>Mute</span></div>
+      </a>
+      <div class="footer-links">
+        <a href="https://chrome.google.com/webstore" target="_blank">Chrome Store</a>
+        <a href="mailto:hello@meetmute.app">Support</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+      </div>
+      <div class="footer-copy">© 2026 MeetMute · Built for remote workers</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+
+// Intersection Observer for scroll-triggered fade-in on feature cards
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feat-card, .how-step, .price-card').forEach((el, i) => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = `opacity 0.5s ease ${i * 0.08}s, transform 0.5s ease ${i * 0.08}s`;
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
