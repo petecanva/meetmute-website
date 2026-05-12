@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Privacy Policy — MeetMute</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=Syne:wght@700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080a0d;--card:#111419;--border:rgba(255,255,255,0.07);--text:#e8eaf0;--muted:#6b7280;--accent:#4ade80}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.8;padding:0}
+nav{border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:10px}
+.logo-icon{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo-text{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text);text-decoration:none}
+.logo-text span{color:var(--accent)}
+.wrap{max-width:680px;margin:0 auto;padding:60px 24px 80px}
+h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:700;letter-spacing:-1px;margin-bottom:8px}
+.updated{font-size:13px;color:var(--muted);margin-bottom:48px;font-family:monospace}
+h2{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin:36px 0 12px;color:var(--text)}
+p{color:#b0b3bc;margin-bottom:16px;font-weight:300}
+ul{color:#b0b3bc;padding-left:20px;margin-bottom:16px;font-weight:300}
+ul li{margin-bottom:6px}
+.highlight{background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);border-radius:10px;padding:16px 20px;margin:24px 0}
+.highlight p{color:var(--accent);margin:0;font-weight:400}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+footer{border-top:1px solid var(--border);padding:24px;text-align:center;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo-icon">🔇</div>
+  <a href="index.html" class="logo-text">Meet<span>Mute</span></a>
+</nav>
+
+<div class="wrap">
+  <h1>Privacy Policy</h1>
+  <div class="updated">Last updated: January 2026</div>
+
+  <div class="highlight">
+    <p>MeetMute does not collect, store, or transmit any personal data. Everything stays on your device.</p>
+  </div>
+
+  <h2>What we collect</h2>
+  <p>MeetMute collects no personal information whatsoever. The extension does not collect, transmit, or share:</p>
+  <ul>
+    <li>Your name, email address, or any identifying information</li>
+    <li>Your location or IP address</li>
+    <li>Your browsing history or web activity</li>
+    <li>Audio, video, or any meeting content</li>
+    <li>Financial or payment information</li>
+    <li>Any usage analytics or telemetry</li>
+  </ul>
+
+  <h2>What is stored locally on your device</h2>
+  <p>MeetMute stores the following data locally in your browser using Chrome's built-in storage API. This data never leaves your device:</p>
+  <ul>
+    <li><strong>Trial start date</strong> — to track your 30-day free trial period</li>
+    <li><strong>License status</strong> — whether your account is on trial or premium</li>
+    <li><strong>License key</strong> — your premium license key, stored locally after activation</li>
+    <li><strong>Mute states</strong> — which meeting tabs are currently muted or unmuted</li>
+    <li><strong>Meeting labels</strong> — any custom names you give to meeting tabs</li>
+  </ul>
+
+  <h2>How the extension works</h2>
+  <p>MeetMute works by setting the <code style="background:rgba(255,255,255,0.06);border-radius:4px;padding:1px 6px;font-family:monospace;font-size:13px;">.muted</code> property on audio and video HTML elements within Google Meet tabs. This is a standard browser operation — no audio is recorded, intercepted, or transmitted at any point.</p>
+
+  <h2>License key verification</h2>
+  <p>When you activate a premium license key, the extension sends only the license key string to the Lemon Squeezy API to verify its validity. No personal information is included in this request. Lemon Squeezy's privacy policy applies to this transaction.</p>
+
+  <h2>Third parties</h2>
+  <p>MeetMute does not share any data with third parties. The only external service the extension communicates with is the Lemon Squeezy license verification API, and only when you manually enter a license key.</p>
+
+  <h2>Google Meet</h2>
+  <p>MeetMute operates on Google Meet pages (meet.google.com) only. It does not read, record, or transmit any content from your meetings. It only controls the audio output setting of your browser tab.</p>
+
+  <h2>Children's privacy</h2>
+  <p>MeetMute is intended for professional use. We do not knowingly collect any information from children under 13.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If we make changes to this privacy policy, we will update the date at the top of this page. Continued use of the extension after changes constitutes acceptance of the updated policy.</p>
+
+  <h2>Contact</h2>
+  <p>If you have any questions about this privacy policy, you can reach us through the <a href="https://chromewebstore.google.com" target="_blank">Chrome Web Store support page</a> for MeetMute.</p>
+
+</div>
+
+<footer>
+  © 2026 MeetMute · <a href="index.html">Home</a>
+</footer>
+
+</body>
+</html>
