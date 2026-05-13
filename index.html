@@ -598,36 +598,31 @@ nav {
 .price-btn.outline { border: 1px solid var(--border2); color: var(--text); }
 .price-btn.outline:hover { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.04); }
 
-/* ── Voucher banner ── */
-.voucher-bar {
-  margin: 40px 0 0;
-  background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(251,191,36,0.02));
-  border: 1px solid rgba(251,191,36,0.18);
+/* ── Published badge ── */
+.published-bar {
+  margin: 40px auto 0;
+  max-width: 720px;
+  background: linear-gradient(135deg, rgba(74,222,128,0.06), rgba(74,222,128,0.02));
+  border: 1px solid rgba(74,222,128,0.2);
   border-radius: 14px;
   padding: 18px 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
-  max-width: 720px;
-  margin: 40px auto 0;
   text-align: center;
 }
-.voucher-bar .v-emoji { font-size: 24px; }
-.voucher-bar .v-text { font-size: 15px; color: var(--text); }
-.voucher-bar .v-text strong { color: var(--gold); }
-.voucher-bar .v-code {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  letter-spacing: 3px;
-  color: var(--gold);
-  background: rgba(251,191,36,0.1);
-  border: 1px solid rgba(251,191,36,0.25);
-  padding: 6px 16px;
-  border-radius: 8px;
+.published-bar .pb-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: blink 2s infinite;
+  flex-shrink: 0;
 }
-.voucher-bar .v-note { font-size: 12px; color: var(--muted); width: 100%; font-family: var(--font-mono); letter-spacing: 0.5px; }
+.published-bar .pb-text { font-size: 14px; color: var(--text); }
+.published-bar .pb-text strong { color: var(--accent); }
+.published-bar .pb-note { font-size: 12px; color: var(--muted); width: 100%; font-family: var(--font-mono); letter-spacing: 0.5px; }
 
 /* ── FAQ ── */
 .faq {
@@ -740,7 +735,7 @@ footer {
       <a href="#pricing">Pricing</a>
       <a href="#faq">FAQ</a>
     </div>
-    <a href="#" class="nav-cta" target="_blank">Coming soon →</a>
+    <a href="https://chromewebstore.google.com/detail/iifeedkhenmfplkebejlanpgphlbcifc?utm_source=item-share-cb" class="nav-cta" target="_blank">Add to Chrome →</a>
   </div>
 </nav>
 
@@ -762,8 +757,8 @@ footer {
     </p>
 
     <div class="hero-actions fade-up">
-      <a href="#" class="btn-primary" target="_blank">
-        <span>Add to Chrome — Coming Soon</span>
+      <a href="https://chromewebstore.google.com/detail/iifeedkhenmfplkebejlanpgphlbcifc?utm_source=item-share-cb" class="btn-primary" target="_blank">
+        <span>Add to Chrome — It's Free</span>
         <span class="arrow">→</span>
       </a>
       <a href="#pricing" class="btn-secondary">
@@ -976,7 +971,7 @@ footer {
           <li><span class="xk">—</span> Focus Mode</li>
           <li><span class="xk">—</span> Custom meeting labels</li>
         </ul>
-        <a href="#" class="price-btn outline" target="_blank">Add to Chrome — Coming Soon</a>
+        <a href="https://chromewebstore.google.com/detail/iifeedkhenmfplkebejlanpgphlbcifc?utm_source=item-share-cb" class="price-btn outline" target="_blank">Add to Chrome — Free</a>
       </div>
       <!-- Lifetime -->
       <div class="price-card featured">
@@ -995,12 +990,11 @@ footer {
       </div>
     </div>
 
-    <!-- Voucher banner -->
-    <div class="voucher-bar">
-      <span class="v-emoji">🎉</span>
-      <div class="v-text"><strong>New Year offer:</strong> 10% off lifetime access</div>
-      <div class="v-code">NEWYEAR10</div>
-      <div class="v-note">Enter code at checkout · Valid until 31 January 2026 · Final price $18.00</div>
+    <!-- Published on Chrome Store badge -->
+    <div class="published-bar">
+      <span class="pb-dot"></span>
+      <div class="pb-text"><strong>Now live</strong> on the Chrome Web Store — install in one click, no sign-up needed</div>
+      <div class="pb-note">Free 30-day trial · Lifetime Premium $20 · No subscription ever</div>
     </div>
   </div>
 </section>
@@ -1066,7 +1060,7 @@ footer {
         <div class="footer-logo-text">Meet<span>Mute</span></div>
       </a>
       <div class="footer-links">
-        <a href="#" target="_blank">Chrome Store</a>
+        <a href="https://chromewebstore.google.com/detail/iifeedkhenmfplkebejlanpgphlbcifc?utm_source=item-share-cb" target="_blank">Chrome Store</a>
         <a href="/privacy.html">Privacy</a>
         <a href="#terms">Terms</a>
       </div>
